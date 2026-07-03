@@ -223,14 +223,22 @@ def header_map(ws) -> dict[str, int]:
     return {c.value: c.column for c in ws[1] if c.value not in (None, "")}
 
 
-def ensure_column(ws, headers: dict[str, int], name: str) -> int:
-    """Return the column index for `name`, creating it at the far right if absent."""
+def ensure_column_after(ws, headers: dict[str, int], after_col: int, name: str) -> int:
+    """Return the column index for `name`. If it doesn't exist yet, insert a
+    brand-new column for it immediately after `after_col` (instead of tacking
+    it onto the far right of the sheet, which would scramble the familiar
+    column order). Existing columns are shifted right as needed; `headers`
+    is updated in place to reflect the new positions."""
     if name in headers:
         return headers[name]
-    col = ws.max_column + 1
-    ws.cell(row=1, column=col, value=name)
-    headers[name] = col
-    return col
+    new_col = after_col + 1
+    ws.insert_cols(new_col)
+    ws.cell(row=1, column=new_col, value=name)
+    for key, idx in list(headers.items()):
+        if idx >= new_col:
+            headers[key] = idx + 1
+    headers[name] = new_col
+    return new_col
 
 
 def process(input_path: Path, output_path: Path, sheet: str | None,
@@ -246,12 +254,15 @@ def process(input_path: Path, output_path: Path, sheet: str | None,
 
     c_created = headers[COL_CREATED]
     c_text = headers[COL_TEXT]
-    c_month = ensure_column(ws, headers, COL_MONTH_YEAR)
-    c_qtr = ensure_column(ws, headers, COL_QUARTER)
-    c_rtype = ensure_column(ws, headers, COL_REQUEST_TYPE)
-    c_pred = ensure_column(ws, headers, COL_PREDICTION)
-    c_conf = ensure_column(ws, headers, COL_CONFIDENCE)
-    c_review = ensure_column(ws, headers, COL_REVIEW)
+    # Missing columns are inserted right next to where they logically belong,
+    # so the report keeps a sensible, familiar layout instead of dumping new
+    # columns at the far right of the sheet.
+    c_month = ensure_column_after(ws, headers, c_created, COL_MONTH_YEAR)
+    c_qtr = ensure_column_after(ws, headers, c_month, COL_QUARTER)
+    c_rtype = ensure_column_after(ws, headers, c_qtr, COL_REQUEST_TYPE)
+    c_pred = ensure_column_after(ws, headers, c_rtype, COL_PREDICTION)
+    c_conf = ensure_column_after(ws, headers, c_pred, COL_CONFIDENCE)
+    c_review = ensure_column_after(ws, headers, c_conf, COL_REVIEW)
 
     stats = Counter()
     rows = filled = predicted = kept_manual = review_count = undated = 0
