@@ -1,0 +1,275 @@
+/* Interview Coach — dark, minimal, fast. */
+
+:root {
+  --bg: #101014;
+  --bg-panel: #17171d;
+  --bg-input: #1e1e26;
+  --border: #2a2a33;
+  --text: #e8e8ec;
+  --text-dim: #9a9aa6;
+  --accent: #6ea8fe;
+  --accent-dim: #2b4a7a;
+  --good: #4cc38a;
+  --warn: #e5b567;
+  --bad: #e5735f;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#root {
+  height: 100vh;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar h1 {
+  font-size: 15px;
+  margin: 0 8px 14px;
+}
+
+.sidebar button {
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.sidebar button:hover {
+  background: var(--bg-input);
+  color: var(--text);
+}
+
+.sidebar button.active {
+  background: var(--accent-dim);
+  color: var(--text);
+}
+
+.sidebar .spacer {
+  flex: 1;
+}
+
+.sidebar .assist-btn {
+  border: 1px solid var(--border);
+  color: var(--accent);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 36px;
+  max-width: 980px;
+}
+
+h2 {
+  font-size: 19px;
+  margin: 0 0 6px;
+}
+
+h3 {
+  font-size: 15px;
+  margin: 22px 0 8px;
+}
+
+.sub {
+  color: var(--text-dim);
+  margin: 0 0 20px;
+}
+
+textarea,
+input[type="text"],
+input[type="password"],
+select {
+  width: 100%;
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+textarea:focus,
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.btn {
+  background: var(--accent);
+  color: #0b0b10;
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.secondary {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 400;
+}
+
+.btn.small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 10px 0;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--bg-input);
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+
+.tag.strong {
+  color: var(--good);
+  border: 1px solid var(--good);
+}
+
+.tag.partial {
+  color: var(--warn);
+  border: 1px solid var(--warn);
+}
+
+.tag.thin {
+  color: var(--bad);
+  border: 1px solid var(--bad);
+}
+
+.error {
+  color: var(--bad);
+  background: rgba(229, 115, 95, 0.08);
+  border: 1px solid var(--bad);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 10px 0;
+  white-space: pre-wrap;
+}
+
+.muted {
+  color: var(--text-dim);
+}
+
+.loading {
+  color: var(--accent);
+}
+
+.qa-question {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.feedback-block {
+  border-left: 3px solid var(--accent-dim);
+  padding-left: 12px;
+  margin: 10px 0;
+  white-space: pre-wrap;
+}
+
+.flag {
+  font-size: 12px;
+  color: var(--warn);
+}
+
+/* Live assist window */
+.assist-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 12px;
+  gap: 10px;
+}
+
+.assist-banner {
+  background: var(--accent-dim);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.assist-points {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.assist-points li {
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.assist-input {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+}
+
+.assist-input textarea {
+  min-height: 56px;
+}
