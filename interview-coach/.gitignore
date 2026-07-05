@@ -1,0 +1,8 @@
+node_modules/
+dist-electron/
+dist-renderer/
+*.log
+.DS_Store
+# Local database lives in Electron userData, but ignore any stray dev copies
+*.sqlite
+*.sqlite3
