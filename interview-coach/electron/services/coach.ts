@@ -4,6 +4,7 @@
 // + already-used tracker) and through the postprocess backstop before it is
 // shown to the user.
 
+import { jsonrepair } from "jsonrepair";
 import { createProvider } from "../llm/provider";
 import {
   buildCoachSystemPrompt,
@@ -31,62 +32,41 @@ function llm() {
 }
 
 // Models sometimes wrap JSON in fences despite instructions, and long outputs
-// can be truncated mid-structure. Parse leniently and repair truncation
-// instead of crashing the whole flow. Exported for tests.
+// can be truncated mid-structure or contain small syntax defects (raw
+// newlines in strings, dangling escapes). Parse leniently: plain parse first,
+// then jsonrepair (fixes defects in place without losing data), then a
+// truncate-and-repair loop as a last resort. Exported for tests.
 export function parseJson<T>(raw: string): T {
   const trimmed = raw.trim();
   const unfenced = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   const start = unfenced.indexOf("{");
   if (start === -1) throw new Error(`LLM did not return JSON: ${raw.slice(0, 200)}`);
   const end = unfenced.lastIndexOf("}");
-  let candidate = end > start ? unfenced.slice(start, end + 1) : unfenced.slice(start);
+  const candidate = end > start ? unfenced.slice(start, end + 1) : unfenced.slice(start);
 
   try {
     return JSON.parse(candidate) as T;
   } catch {
-    // Truncated or malformed mid-array. Cut back to the last structural
-    // boundary a few times, closing whatever is open, until it parses.
-    candidate = unfenced.slice(start);
-    for (let attempt = 0; attempt < 40; attempt++) {
-      try {
-        return JSON.parse(repairTruncatedJson(candidate)) as T;
-      } catch {
-        const cut = Math.max(
-          candidate.lastIndexOf(","),
-          candidate.lastIndexOf("{"),
-          candidate.lastIndexOf("[")
-        );
-        if (cut <= 0) break;
-        candidate = candidate.slice(0, cut);
-      }
-    }
-    throw new Error(`Could not parse LLM response as JSON: ${raw.slice(0, 300)}`);
+    /* fall through to repair */
   }
-}
 
-// Close any unterminated string and unbalanced brackets, and drop dangling
-// fragments like a trailing comma or a key with no value.
-function repairTruncatedJson(input: string): string {
-  let inString = false;
-  let escape = false;
-  const closers: string[] = [];
-  for (const ch of input) {
-    if (inString) {
-      if (escape) escape = false;
-      else if (ch === "\\") escape = true;
-      else if (ch === '"') inString = false;
-    } else if (ch === '"') inString = true;
-    else if (ch === "{") closers.push("}");
-    else if (ch === "[") closers.push("]");
-    else if (ch === "}" || ch === "]") closers.pop();
+  let repairable = unfenced.slice(start);
+  for (let attempt = 0; attempt < 40; attempt++) {
+    try {
+      return JSON.parse(jsonrepair(repairable)) as T;
+    } catch {
+      // jsonrepair couldn't make sense of the tail (e.g. truncated mid-escape).
+      // Cut back to the previous structural boundary and try again.
+      const cut = Math.max(
+        repairable.lastIndexOf(","),
+        repairable.lastIndexOf("{"),
+        repairable.lastIndexOf("[")
+      );
+      if (cut <= 0) break;
+      repairable = repairable.slice(0, cut);
+    }
   }
-  let out = input;
-  if (inString) out += '"';
-  out = out.replace(/,\s*$/, "");
-  out = out.replace(/"(?:[^"\\]|\\.)*"\s*:\s*$/, "");
-  out = out.replace(/,\s*$/, "");
-  while (closers.length > 0) out += closers.pop();
-  return out;
+  throw new Error(`Could not parse LLM response as JSON: ${raw.slice(0, 300)}`);
 }
 
 function buildContext(sessionId: number): CoachContext {
@@ -133,7 +113,7 @@ export async function ingestText(
     system:
       "You extract structured interview-prep data from a candidate's own documents. Be precise and never invent.",
     messages: [{ role: "user", content: ingestionPrompt(kind, text, profile.voiceProfile) }],
-    maxTokens: 8000
+    maxTokens: 16000
   });
   const parsed = parseJson<IngestJson>(raw);
 
