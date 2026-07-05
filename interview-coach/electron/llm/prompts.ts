@@ -130,6 +130,8 @@ Rules:
 - Facts must be specific and atomic (one role, one metric, one tech per fact).
 - Only extract what is actually in the text. Do not infer accomplishments.
 - Stories: only where the text contains a real situation with actions and outcomes.
+- Keep output bounded: at most 30 facts, 10 projects, 10 stories. Prefer the most interview-relevant ones. Keep every string under 300 characters.
+- Escape all JSON strings properly (quotes, newlines).
 ${existingVoiceProfile ? `- An earlier voice profile exists: "${existingVoiceProfile}". Merge what this new text reveals into an updated version.` : ""}
 
 TEXT TO PARSE:
