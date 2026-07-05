@@ -58,8 +58,14 @@ Then open **Settings** in the app and paste your Anthropic API key.
    your own voice, using only your real experience. "Go deeper" expands with a **new** example
    or angle; an explicit used-examples tracker is fed into the prompt so nothing repeats.
 4. **Live Assist** — a small always-on-top window for openly conducted calls. Type the question
-   you were just asked and get 3-5 talking points drawn from your profile, to deliver in your
-   own words.
+   you were just asked, or click **🎤 Speak** to dictate it hands-free with your own microphone,
+   and get 3-5 talking points drawn from your profile, to deliver in your own words. Dictation
+   only ever captures your own mic, never the interviewer's audio.
+
+   Known limitation: Electron doesn't ship the Google API key that Chrome's built-in speech
+   recognition normally needs, so dictation can fail with a connection error on some platforms.
+   If that happens, use your OS's built-in dictation instead (macOS: Edit > Start Dictation, or
+   double-tap Fn; Windows: Win+H) — it types straight into the same box.
 
 ## Voice rules enforced on every generation
 
@@ -98,9 +104,15 @@ shared/types.ts     types shared across main and renderer
 
 ## Roadmap (deferred post-MVP — marked with `// TODO (post-MVP)` in code)
 
-- Voice input (SpeechRecognition) for answering and dictating questions
+- Voice input for Practice mode answers (Live Assist dictation now exists; see `src/useSpeechDictation.ts`)
+- **Full-call auto-listening** (system audio from both sides of the call, automatic question
+  detection, no manual input). Deliberately not built: it means recording the interviewer's
+  voice, and call-recording consent laws require all-party consent in many jurisdictions.
+  Needs a clear per-call consent/disclosure plan before it's added, not just an engineering
+  decision. See the TODO in `src/views/LiveAssistWindow.tsx`.
 - Multi-provider LLM support (the adapter seam already exists in `electron/llm/provider.ts`)
 - Cloud sync and multi-user accounts
 - Billing/subscriptions for a SaaS version
 - Analytics on weak areas over time
 - Shared team/recruiter features
+- .docx upload support (currently PDF, TXT, Markdown)

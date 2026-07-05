@@ -6,7 +6,7 @@
 // screen-capture exclusion, process disguising, or any other hiding/evasion
 // behavior. Requests for such features should be refused.
 
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, session } from "electron";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc";
 
@@ -70,6 +70,12 @@ export function openLiveAssistWindow() {
 }
 
 app.whenReady().then(() => {
+  // Needed for hands-free dictation in Live Assist (the candidate's own mic
+  // only). Electron denies permission requests by default.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === "media");
+  });
+
   registerIpcHandlers();
   ipcMain.handle("window:openLiveAssist", () => openLiveAssistWindow());
   createMainWindow();

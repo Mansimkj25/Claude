@@ -254,6 +254,11 @@ select:focus {
   flex-shrink: 0;
 }
 
+.assist-banner.listening {
+  background: rgba(76, 195, 138, 0.15);
+  border: 1px solid var(--good);
+}
+
 .assist-points {
   flex: 1;
   overflow-y: auto;

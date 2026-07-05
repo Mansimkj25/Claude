@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
+import { useSpeechDictation } from "../useSpeechDictation";
 import type { JobDescription, RoundType, Session, Turn } from "../../shared/types";
 
 export function LiveAssistWindow() {
@@ -35,14 +36,16 @@ export function LiveAssistWindow() {
     return s;
   };
 
-  const ask = async () => {
-    const q = question.trim();
-    if (!q) return;
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+
+  const askWithText = async (q: string) => {
+    if (!q.trim() || busyRef.current) return;
     setBusy(true);
     setError("");
     try {
       const s = await ensureSession();
-      const turn = await api.liveAssist(s.id, q);
+      const turn = await api.liveAssist(s.id, q.trim());
       setTurns((prev) => [...prev, turn]);
       setQuestion("");
     } catch (e) {
@@ -51,6 +54,15 @@ export function LiveAssistWindow() {
       setBusy(false);
     }
   };
+
+  const ask = () => askWithText(question);
+
+  // Hands-free dictation of the candidate's own mic only (never the
+  // interviewer's audio). A finished utterance auto-submits as the question.
+  const dictation = useSpeechDictation((finalText) => {
+    setQuestion(finalText);
+    askWithText(finalText);
+  });
 
   const deeper = async (turnId: number) => {
     setBusy(true);
@@ -126,8 +138,14 @@ export function LiveAssistWindow() {
         <div ref={bottomRef} />
       </div>
 
+      {dictation.status === "listening" && (
+        <div className="assist-banner listening">
+          🎤 Listening (your mic only) — {dictation.interim || "say the question you were just asked…"}
+        </div>
+      )}
+      {dictation.errorMessage && <div className="flag">⚑ {dictation.errorMessage}</div>}
+
       <div className="assist-input">
-        {/* TODO (post-MVP): dictation via SpeechRecognition so the question can be spoken. */}
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
@@ -137,12 +155,26 @@ export function LiveAssistWindow() {
               ask();
             }
           }}
-          placeholder="What were you just asked? (Enter to send)"
+          placeholder="What were you just asked? (Enter to send, or click the mic to speak it)"
         />
+        <button
+          className={`btn small ${dictation.status === "listening" ? "" : "secondary"}`}
+          onClick={() => (dictation.status === "listening" ? dictation.stop() : dictation.start())}
+          title="Dictate the question with your own mic (never records the interviewer)"
+        >
+          {dictation.status === "listening" ? "⏹ Stop" : "🎤 Speak"}
+        </button>
         <button className="btn" onClick={ask} disabled={busy || question.trim().length === 0}>
           {busy ? "…" : "Go"}
         </button>
       </div>
+      {/*
+        TODO (post-MVP): full-call auto-listening (system audio, both sides
+        of the call, auto question detection). Deliberately not built here:
+        it means recording the interviewer's voice, and call-recording
+        consent laws require all-party consent in many jurisdictions. Needs a
+        clear per-call consent/disclosure plan before it's added.
+      */}
     </div>
   );
 }
