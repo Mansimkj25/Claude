@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
-import type { Profile } from "../../shared/types";
+import type { KnowledgeDocument, Profile } from "../../shared/types";
 
 type IngestKind = "resume" | "writeup" | "notes";
 
@@ -12,10 +12,12 @@ export function ProfileView() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [voiceDraft, setVoiceDraft] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
 
   const reload = useCallback(async () => {
-    const p = await api.getProfile();
+    const [p, docs] = await Promise.all([api.getProfile(), api.listDocuments()]);
     setProfile(p);
+    setDocuments(docs);
   }, []);
 
   useEffect(() => {
@@ -43,9 +45,9 @@ export function ProfileView() {
       return `Parsed: ${r.factsAdded} facts, ${r.projectsAdded} projects, ${r.storiesAdded} stories added. Voice profile updated.`;
     });
 
-  const ingestPdf = () =>
+  const uploadDocument = () =>
     run(async () => {
-      const r = await api.ingestPdf();
+      const r = await api.uploadDocument(kind);
       if (!r) return "Cancelled.";
       return `Parsed ${r.fileName}: ${r.result.factsAdded} facts, ${r.result.projectsAdded} projects, ${r.result.storiesAdded} stories added.`;
     });
@@ -62,19 +64,20 @@ export function ProfileView() {
 
       <div className="card">
         <div className="row">
-          <select value={kind} onChange={(e) => setKind(e.target.value as IngestKind)} style={{ width: 180 }}>
-            <option value="resume">Resume (paste text)</option>
-            <option value="writeup">Project write-up</option>
+          <select value={kind} onChange={(e) => setKind(e.target.value as IngestKind)} style={{ width: 220 }}>
+            <option value="resume">Resume</option>
+            <option value="writeup">Projects & experience (detail)</option>
             <option value="notes">Free-text notes</option>
           </select>
-          <button className="btn secondary" onClick={ingestPdf} disabled={busy}>
-            Upload resume PDF…
+          <button className="btn secondary" onClick={uploadDocument} disabled={busy}>
+            {busy ? "Parsing…" : "Upload file (PDF, TXT, MD)…"}
           </button>
+          <span className="muted">or paste below</span>
         </div>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Paste your resume, a project write-up, or notes about your experience…"
+          placeholder="Paste your resume, a detailed write-up of your projects and experience, or notes…"
         />
         <div className="row">
           <button className="btn" onClick={ingestText} disabled={busy || text.trim().length === 0}>
@@ -84,6 +87,31 @@ export function ProfileView() {
         </div>
         {error && <div className="error">{error}</div>}
       </div>
+
+      <h3>Knowledge bank ({documents.length})</h3>
+      <p className="muted">
+        Every document you've uploaded or pasted. This is what the coach's knowledge of you is
+        based on. Removing a document keeps the facts and stories already extracted from it.
+      </p>
+      {documents.map((d) => (
+        <div className="row" key={d.id}>
+          <span className="tag">{d.kind}</span>
+          <span style={{ flex: 1 }}>{d.fileName}</span>
+          <span className="muted">
+            {Math.max(1, Math.round(d.chars / 1000))}k chars · {d.createdAt.slice(0, 10)}
+          </span>
+          <button
+            className="btn small secondary"
+            onClick={async () => {
+              await api.deleteDocument(d.id);
+              reload();
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      {documents.length === 0 && <p className="muted">Nothing uploaded yet.</p>}
 
       <h3>Voice profile</h3>
       <p className="muted">

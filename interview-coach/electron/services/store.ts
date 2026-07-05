@@ -5,6 +5,7 @@ import type {
   Fact,
   Feedback,
   JobDescription,
+  KnowledgeDocument,
   Profile,
   Project,
   Requirement,
@@ -163,6 +164,28 @@ export function updateStory(s: Story): void {
 
 export function deleteStory(id: number): void {
   getDb().prepare("DELETE FROM stories WHERE id = ?").run(id);
+}
+
+// ---- knowledge bank documents ----
+
+export function addDocument(fileName: string, kind: string, content: string): void {
+  getDb()
+    .prepare("INSERT INTO documents (file_name, kind, content) VALUES (?, ?, ?)")
+    .run(fileName, kind, content);
+}
+
+export function listDocuments(): KnowledgeDocument[] {
+  return (
+    getDb()
+      .prepare(
+        "SELECT id, file_name AS fileName, kind, created_at AS createdAt, length(content) AS chars FROM documents ORDER BY id DESC"
+      )
+      .all() as KnowledgeDocument[]
+  );
+}
+
+export function deleteDocument(id: number): void {
+  getDb().prepare("DELETE FROM documents WHERE id = ?").run(id);
 }
 
 // ---- job descriptions ----

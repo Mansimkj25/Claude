@@ -46,6 +46,16 @@ CREATE TABLE IF NOT EXISTS stories (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Knowledge bank: every uploaded or pasted source document, kept in full so
+-- the user can see what the coach's knowledge is based on.
+CREATE TABLE IF NOT EXISTS documents (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  file_name  TEXT NOT NULL,
+  kind       TEXT NOT NULL,               -- resume | writeup | notes
+  content    TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS job_descriptions (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   title        TEXT NOT NULL DEFAULT '',

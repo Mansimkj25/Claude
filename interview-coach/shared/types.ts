@@ -96,6 +96,14 @@ export interface Turn {
   createdAt: string;
 }
 
+export interface KnowledgeDocument {
+  id: number;
+  fileName: string;
+  kind: string; // resume | writeup | notes
+  createdAt: string;
+  chars: number; // content length; full content stays in the DB
+}
+
 export interface IngestResult {
   voiceProfile: string;
   factsAdded: number;
@@ -117,7 +125,11 @@ export interface CoachApi {
 
   getProfile(): Promise<Profile>;
   ingestText(kind: "resume" | "writeup" | "notes", text: string): Promise<IngestResult>;
-  ingestPdf(): Promise<{ fileName: string; result: IngestResult } | null>;
+  uploadDocument(
+    kind: "resume" | "writeup" | "notes"
+  ): Promise<{ fileName: string; result: IngestResult } | null>;
+  listDocuments(): Promise<KnowledgeDocument[]>;
+  deleteDocument(id: number): Promise<void>;
   updateVoiceProfile(text: string): Promise<void>;
   updateFact(id: number, content: string): Promise<void>;
   deleteFact(id: number): Promise<void>;

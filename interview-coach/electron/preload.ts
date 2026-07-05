@@ -7,7 +7,9 @@ const api: CoachApi = {
 
   getProfile: () => ipcRenderer.invoke("profile:get"),
   ingestText: (kind, text) => ipcRenderer.invoke("profile:ingestText", kind, text),
-  ingestPdf: () => ipcRenderer.invoke("profile:ingestPdf"),
+  uploadDocument: (kind) => ipcRenderer.invoke("profile:uploadDocument", kind),
+  listDocuments: () => ipcRenderer.invoke("documents:list"),
+  deleteDocument: (id: number) => ipcRenderer.invoke("documents:delete", id),
   updateVoiceProfile: (text: string) => ipcRenderer.invoke("profile:updateVoiceProfile", text),
   updateFact: (id: number, content: string) => ipcRenderer.invoke("facts:update", id, content),
   deleteFact: (id: number) => ipcRenderer.invoke("facts:delete", id),

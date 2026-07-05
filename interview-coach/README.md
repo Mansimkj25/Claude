@@ -47,8 +47,9 @@ Then open **Settings** in the app and paste your Anthropic API key.
 
 ## Using it
 
-1. **My Profile** — paste your resume (or upload a PDF), project write-ups, and notes. The app
-   parses them into editable facts, projects, and STAR stories, and derives a **voice profile**
+1. **My Profile** — paste or upload (PDF/TXT/Markdown) your resume, detailed project and
+   experience write-ups, and notes. Everything lands in a visible **knowledge bank**, and the
+   app parses it into editable facts, projects, and STAR stories, plus a **voice profile**
    (how you actually talk) that is injected into every generation.
 2. **Job Setup** — paste a job description. The app extracts key requirements and flags where
    your profile is strong, partial, or thin. Pick a round type and start a practice session.
@@ -76,7 +77,7 @@ em-dashes and flags what it changed.
 ## Data model / schema
 
 The SQLite schema is in [`electron/db/schema.sql`](electron/db/schema.sql):
-`profile` (raw sources + voice profile), `facts`, `projects`, `stories` (STAR),
+`profile` (raw sources + voice profile), `documents` (knowledge bank), `facts`, `projects`, `stories` (STAR),
 `job_descriptions` (with fit analysis), `sessions`, `turns` (question / answer / feedback /
 talking points), and `used_examples` (the no-repeat tracker), plus `settings` (API key, model).
 The database file lives in Electron's userData directory as `interview-coach.sqlite`.
