@@ -42,7 +42,15 @@ export function useSpeechDictation(onFinalText: (text: string) => void) {
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const wantListeningRef = useRef(false);
-  const retriesRef = useRef(0);
+  // Chromium ends a recognition session after almost every utterance even
+  // with continuous=true, so onend fires constantly during normal, healthy
+  // use — that must NOT count against a retry budget, or auto-listen dies
+  // silently a few questions into a real interview. Only count restarts that
+  // produced zero speech AND happened in rapid succession (a genuine failure
+  // loop, e.g. the recognition service is unreachable and dies instantly).
+  const emptyFastCyclesRef = useRef(0);
+  const gotResultThisCycleRef = useRef(false);
+  const lastLaunchAtRef = useRef(0);
   const onFinalTextRef = useRef(onFinalText);
   onFinalTextRef.current = onFinalText;
 
@@ -51,8 +59,11 @@ export function useSpeechDictation(onFinalText: (text: string) => void) {
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = "en-US";
+    gotResultThisCycleRef.current = false;
+    lastLaunchAtRef.current = Date.now();
 
     rec.onresult = (e: SpeechRecognitionEvent) => {
+      gotResultThisCycleRef.current = true;
       let finalText = "";
       let interimText = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -85,10 +96,18 @@ export function useSpeechDictation(onFinalText: (text: string) => void) {
         setStatus("idle");
         return;
       }
-      // Recognition auto-stops periodically in continuous mode; restart,
-      // with a cap so a persistently broken service doesn't loop forever.
-      retriesRef.current += 1;
-      if (retriesRef.current > 5) {
+      const cycleMs = Date.now() - lastLaunchAtRef.current;
+      if (gotResultThisCycleRef.current || cycleMs > 2000) {
+        // A healthy cycle: it either heard speech, or it ran for a while
+        // before ending naturally (normal silence timeout). Reset the
+        // failure counter and keep listening indefinitely.
+        emptyFastCyclesRef.current = 0;
+      } else {
+        // Ended almost instantly with nothing heard — likely a broken
+        // recognition service, not normal behavior.
+        emptyFastCyclesRef.current += 1;
+      }
+      if (emptyFastCyclesRef.current > 8) {
         wantListeningRef.current = false;
         setStatus("error");
         setErrorMessage(FLAKY_MESSAGE);
@@ -112,7 +131,7 @@ export function useSpeechDictation(onFinalText: (text: string) => void) {
       return;
     }
     wantListeningRef.current = true;
-    retriesRef.current = 0;
+    emptyFastCyclesRef.current = 0;
     setErrorMessage("");
     launch(Ctor);
   }, [launch]);

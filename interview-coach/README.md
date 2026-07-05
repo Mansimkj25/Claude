@@ -58,9 +58,17 @@ Then open **Settings** in the app and paste your Anthropic API key.
    your own voice, using only your real experience. "Go deeper" expands with a **new** example
    or angle; an explicit used-examples tracker is fed into the prompt so nothing repeats.
 4. **Live Assist** — a small always-on-top window for openly conducted calls. Type the question
-   you were just asked, or click **🎤 Speak** to dictate it hands-free with your own microphone,
-   and get 3-5 talking points drawn from your profile, to deliver in your own words. Dictation
-   only ever captures your own mic, never the interviewer's audio.
+   you were just asked, or click **🎤 Auto-listen** to turn on hands-free mode: once it's on, it
+   keeps listening with your own microphone and auto-answers question after question with no
+   further clicks, until you click **⏹ Stop auto-listen**. If a question comes in while a
+   previous answer is still generating, it's queued and answered right after, not dropped.
+
+   Auto-listen only ever captures your own mic. It does not record or transcribe the
+   interviewer's side of the call directly. That said, if you're on the call through laptop
+   speakers rather than headphones, your mic will still acoustically pick up whatever the
+   interviewer says, the same way any recording would — the app surfaces this as an on-screen
+   reminder next to the toggle, since that's a call-recording consent question only you can
+   answer for that specific interview, not something the app can verify.
 
    Known limitation: Electron doesn't ship the Google API key that Chrome's built-in speech
    recognition normally needs, so dictation can fail with a connection error on some platforms.

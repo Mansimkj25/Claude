@@ -38,27 +38,39 @@ export function LiveAssistWindow() {
 
   const busyRef = useRef(busy);
   busyRef.current = busy;
+  // If a question comes in (typed or spoken) while a previous one is still
+  // being answered, queue it instead of dropping it, and drain the queue
+  // once the in-flight request finishes.
+  const pendingRef = useRef<string[]>([]);
 
   const askWithText = async (q: string) => {
-    if (!q.trim() || busyRef.current) return;
+    const text = q.trim();
+    if (!text) return;
+    if (busyRef.current) {
+      pendingRef.current.push(text);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       const s = await ensureSession();
-      const turn = await api.liveAssist(s.id, q.trim());
+      const turn = await api.liveAssist(s.id, text);
       setTurns((prev) => [...prev, turn]);
       setQuestion("");
     } catch (e) {
       setError(String(e));
     } finally {
       setBusy(false);
+      const next = pendingRef.current.shift();
+      if (next) askWithText(next);
     }
   };
 
   const ask = () => askWithText(question);
 
-  // Hands-free dictation of the candidate's own mic only (never the
-  // interviewer's audio). A finished utterance auto-submits as the question.
+  // Hands-free auto-listen, scoped to the candidate's own microphone only.
+  // Once toggled on it keeps listening indefinitely: every finished
+  // utterance is auto-submitted as the next question with no further clicks.
   const dictation = useSpeechDictation((finalText) => {
     setQuestion(finalText);
     askWithText(finalText);
@@ -140,10 +152,18 @@ export function LiveAssistWindow() {
 
       {dictation.status === "listening" && (
         <div className="assist-banner listening">
-          🎤 Listening (your mic only) — {dictation.interim || "say the question you were just asked…"}
+          🎤 Auto-listen is on (your mic only){busy ? ", answering…" : ""} —{" "}
+          {dictation.interim || "say the question you were just asked, it'll answer automatically"}
         </div>
       )}
       {dictation.errorMessage && <div className="flag">⚑ {dictation.errorMessage}</div>}
+
+      <p className="muted" style={{ fontSize: 12, margin: "2px 0" }}>
+        Auto-listen only captures your own microphone. If you're on this call through laptop
+        speakers rather than headphones, your mic will also pick up the interviewer's voice
+        acoustically, same as any recording would — make sure that's fine for this call before
+        turning it on.
+      </p>
 
       <div className="assist-input">
         <textarea
@@ -155,14 +175,14 @@ export function LiveAssistWindow() {
               ask();
             }
           }}
-          placeholder="What were you just asked? (Enter to send, or click the mic to speak it)"
+          placeholder="What were you just asked? (Enter to send, or turn on auto-listen to speak it)"
         />
         <button
           className={`btn small ${dictation.status === "listening" ? "" : "secondary"}`}
           onClick={() => (dictation.status === "listening" ? dictation.stop() : dictation.start())}
-          title="Dictate the question with your own mic (never records the interviewer)"
+          title="Auto-listen with your own mic (never records the interviewer)"
         >
-          {dictation.status === "listening" ? "⏹ Stop" : "🎤 Speak"}
+          {dictation.status === "listening" ? "⏹ Stop auto-listen" : "🎤 Auto-listen"}
         </button>
         <button className="btn" onClick={ask} disabled={busy || question.trim().length === 0}>
           {busy ? "…" : "Go"}
